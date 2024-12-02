@@ -1,5 +1,6 @@
 rules_version = '2';
 
+<<<<<<< HEAD
 service firebase.storage {
   match /b/{bucket}/o {
     // Helper functions
@@ -25,6 +26,15 @@ service firebase.storage {
       allow write: if isAuthenticated() && 
                     request.auth.token.email.matches(".*@admin\\.com") && 
                     isValidImage();
+=======
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+>>>>>>> 41e31c532534bbc91aa9847c0256e008a7e7c676
     }
   }
 }

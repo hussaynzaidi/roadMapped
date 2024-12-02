@@ -6,7 +6,10 @@ class Roadmap {
   final String createdBy;
   final DateTime createdAt;
   final bool isPublic;
+<<<<<<< HEAD
   final double progress;
+=======
+>>>>>>> 41e31c532534bbc91aa9847c0256e008a7e7c676
 
   Roadmap({
     required this.id,
@@ -16,7 +19,10 @@ class Roadmap {
     required this.createdBy,
     required this.createdAt,
     this.isPublic = true,
+<<<<<<< HEAD
     this.progress = 0.0,
+=======
+>>>>>>> 41e31c532534bbc91aa9847c0256e008a7e7c676
   });
 
   factory Roadmap.fromJson(Map<String, dynamic> json) {
@@ -30,7 +36,10 @@ class Roadmap {
       createdBy: json['createdBy'],
       createdAt: DateTime.parse(json['createdAt']),
       isPublic: json['isPublic'] ?? true,
+<<<<<<< HEAD
       progress: json['progress']?.toDouble() ?? 0.0,
+=======
+>>>>>>> 41e31c532534bbc91aa9847c0256e008a7e7c676
     );
   }
 
@@ -42,7 +51,10 @@ class Roadmap {
         'createdBy': createdBy,
         'createdAt': createdAt.toIso8601String(),
         'isPublic': isPublic,
+<<<<<<< HEAD
         'progress': progress,
+=======
+>>>>>>> 41e31c532534bbc91aa9847c0256e008a7e7c676
       };
 }
 
