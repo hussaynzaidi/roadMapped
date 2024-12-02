@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // User avatars
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                    request.auth.uid == userId && 
+                    isValidImage();
+    }
+
+    // Resource thumbnails
+    match /thumbnails/{resourceId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                    request.auth.token.email.matches(".*@admin\\.com") && 
+                    isValidImage();
+    }
+  }
+}
