@@ -6,6 +6,16 @@ import '../../services/auth_service.dart';
 import '../../widgets/step_dialog.dart';
 import '../../widgets/step_tile.dart';
 
+/// Screen for creating new roadmaps.
+/// 
+/// Allows users to:
+/// - Set title and description
+/// - Add and manage steps
+/// - Configure visibility settings
+/// - Add resources to steps
+/// 
+/// Uses [RoadmapRepository] for persistence and
+/// [AuthService] for user association.
 class RoadmapCreateScreen extends StatefulWidget {
   const RoadmapCreateScreen({super.key});
 
@@ -14,10 +24,17 @@ class RoadmapCreateScreen extends StatefulWidget {
 }
 
 class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
+  /// Form key for validation
   final _formKey = GlobalKey<FormState>();
+  
+  /// Controllers for text input fields
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  
+  /// List of steps in the roadmap
   final List<RoadmapStep> _steps = [];
+  
+  /// Visibility setting for the roadmap
   bool _isPublic = true;
 
   @override
@@ -27,6 +44,10 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
     super.dispose();
   }
 
+  /// Shows dialog to add a new step to the roadmap.
+  /// 
+  /// Uses [StepDialog] for input and adds the new step
+  /// to [_steps] when saved.
   void _addStep() {
     showDialog(
       context: context,
@@ -40,6 +61,14 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
     );
   }
 
+  /// Saves the roadmap to Firestore.
+  /// 
+  /// Process:
+  /// 1. Validates form input
+  /// 2. Gets current user
+  /// 3. Creates Roadmap object
+  /// 4. Persists to Firestore
+  /// 5. Handles success/error states
   Future<void> _saveRoadmap() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -68,6 +97,42 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
         );
       }
     }
+  }
+
+  /// Validates and saves the current form state.
+  /// 
+  /// Returns true if validation passes, false otherwise.
+  /// Used before performing save operations.
+  bool _validateForm() {
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  /// Resets the form to its initial state.
+  /// 
+  /// Clears:
+  /// - Title and description fields
+  /// - Steps list
+  /// - Visibility setting
+  void _resetForm() {
+    _titleController.clear();
+    _descriptionController.clear();
+    setState(() {
+      _steps.clear();
+      _isPublic = true;
+    });
+    _formKey.currentState?.reset();
+  }
+
+  /// Removes a step from the roadmap.
+  /// 
+  /// Parameters:
+  /// - [index]: The position of the step to remove
+  /// 
+  /// Updates the UI immediately after removal.
+  void _removeStep(int index) {
+    setState(() {
+      _steps.removeAt(index);
+    });
   }
 
   @override

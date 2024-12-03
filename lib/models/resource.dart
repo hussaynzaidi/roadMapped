@@ -1,56 +1,54 @@
-enum ResourceType { article, video, course, book, other }
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+enum ResourceType {
+  video,
+  article,
+  book,
+  course,
+  other
+}
 
 class Resource {
   final String id;
   final String title;
+  final String description;
   final String url;
   final ResourceType type;
-  final String? description;
-  final bool isPaid;
-  final String? thumbnailUrl;
-  final Duration? estimatedTime;
-  final List<String> tags;
+  final String addedBy;
+  final DateTime addedAt;
 
   Resource({
     required this.id,
     required this.title,
+    required this.description,
     required this.url,
     required this.type,
-    this.description,
-    this.isPaid = false,
-    this.thumbnailUrl,
-    this.estimatedTime,
-    this.tags = const [],
+    required this.addedBy,
+    required this.addedAt,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'url': url,
+      'type': type.toString().split('.').last,
+      'addedBy': addedBy,
+      'addedAt': Timestamp.fromDate(addedAt),
+    };
+  }
 
   factory Resource.fromJson(Map<String, dynamic> json) {
     return Resource(
-      id: json['id'],
-      title: json['title'],
-      url: json['url'],
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      url: json['url'] as String,
       type: ResourceType.values.firstWhere(
-        (e) => e.toString() == 'ResourceType.${json['type']}',
-        orElse: () => ResourceType.other,
+        (e) => e.toString().split('.').last == json['type'],
       ),
-      description: json['description'],
-      isPaid: json['isPaid'] ?? false,
-      thumbnailUrl: json['thumbnailUrl'],
-      estimatedTime: json['estimatedTime'] != null
-          ? Duration(minutes: json['estimatedTime'])
-          : null,
-      tags: List<String>.from(json['tags'] ?? []),
+      addedBy: json['addedBy'] as String,
+      addedAt: (json['addedAt'] as Timestamp).toDate(),
     );
   }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'url': url,
-        'type': type.toString().split('.').last,
-        'description': description,
-        'isPaid': isPaid,
-        'thumbnailUrl': thumbnailUrl,
-        'estimatedTime': estimatedTime?.inMinutes,
-        'tags': tags,
-      };
 }

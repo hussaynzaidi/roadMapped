@@ -5,6 +5,7 @@ import '../../repositories/roadmap_repository.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/roadmap_card.dart';
 import '../roadmap/roadmap_create_screen.dart';
+import '../roadmap/roadmap_detail.dart';
 
 enum GridLayout { single, double, triple }
 
@@ -19,15 +20,26 @@ class _HomeScreenState extends State<HomeScreen> {
   GridLayout _currentLayout = GridLayout.single;
   late final RoadmapRepository _roadmapRepository;
   late final Stream<List<Roadmap>> _roadmapsStream;
+  bool _showPublicRoadmaps = false;
 
   @override
   void initState() {
     super.initState();
     _roadmapRepository = context.read<RoadmapRepository>();
+    _updateRoadmapsStream();
+  }
+
+  void _updateRoadmapsStream() {
     final user = context.read<AuthService>().currentUser;
-    _roadmapsStream = user != null 
-        ? _roadmapRepository.getUserRoadmaps(user.uid)
-        : _roadmapRepository.getPublicRoadmaps();
+    _roadmapsStream = _showPublicRoadmaps
+        ? _roadmapRepository.getPublicRoadmaps()
+        : (user != null
+            ? _roadmapRepository.getUserRoadmaps(user.uid)
+            : Stream.value([]));
+  }
+
+  Future<void> _logout() async {
+    await context.read<AuthService>().signOut();
   }
 
   int _getCrossAxisCount() {
@@ -41,95 +53,99 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  double _getChildAspectRatio() {
-    switch (_currentLayout) {
-      case GridLayout.single:
-        return 3.0;
-      case GridLayout.double:
-        return 0.75;
-      case GridLayout.triple:
-        return 0.7;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('RoadMapped'),
         actions: [
-          PopupMenuButton<GridLayout>(
-            icon: const Icon(Icons.view_module),
-            initialValue: _currentLayout,
-            onSelected: (GridLayout layout) {
+          IconButton(
+            icon: Icon(_showPublicRoadmaps ? Icons.person : Icons.public),
+            onPressed: () {
               setState(() {
-                _currentLayout = layout;
+                _showPublicRoadmaps = !_showPublicRoadmaps;
+                _updateRoadmapsStream();
               });
             },
-            itemBuilder: (BuildContext context) => [
+          ),
+          PopupMenuButton<GridLayout>(
+            icon: const Icon(Icons.grid_view),
+            onSelected: (GridLayout layout) {
+              setState(() => _currentLayout = layout);
+            },
+            itemBuilder: (context) => [
               const PopupMenuItem(
                 value: GridLayout.single,
-                child: Row(
-                  children: [
-                    Icon(Icons.view_agenda),
-                    SizedBox(width: 8),
-                    Text('Single Column'),
-                  ],
-                ),
+                child: Text('List View'),
               ),
               const PopupMenuItem(
                 value: GridLayout.double,
-                child: Row(
-                  children: [
-                    Icon(Icons.grid_view),
-                    SizedBox(width: 8),
-                    Text('Two Columns'),
-                  ],
-                ),
+                child: Text('Grid (2)'),
               ),
               const PopupMenuItem(
                 value: GridLayout.triple,
-                child: Row(
-                  children: [
-                    Icon(Icons.grid_on),
-                    SizedBox(width: 8),
-                    Text('Three Columns'),
-                  ],
-                ),
+                child: Text('Grid (3)'),
               ),
             ],
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthService>().signOut();
-            },
+            onPressed: _logout,
           ),
         ],
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _getCrossAxisCount(),
-          childAspectRatio: _getChildAspectRatio(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemBuilder: (context, index) {
-          return RoadmapCard(
-            roadmap: Roadmap(
-              id: 'sample',
-              title: 'Sample Roadmap',
-              description: 'This is a sample roadmap description that might be a bit longer to test the layout',
-              steps: [],
-              createdBy: 'system',
-              createdAt: DateTime.now(),
-              progress: 0.5,
+      body: StreamBuilder<List<Roadmap>>(
+        stream: _roadmapsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final roadmaps = snapshot.data ?? [];
+          
+          if (roadmaps.isEmpty) {
+            return Center(
+              child: Text(_showPublicRoadmaps 
+                ? 'No public roadmaps available.'
+                : 'You haven\'t created any roadmaps yet.'),
+            );
+          }
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _getCrossAxisCount(),
+              childAspectRatio: _currentLayout == GridLayout.single 
+                  ? 3 
+                  : _currentLayout == GridLayout.double 
+                      ? 0.8 
+                      : 0.7,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
             ),
-            isListView: _currentLayout == GridLayout.single,
+            itemCount: roadmaps.length,
+            itemBuilder: (context, index) {
+              return RoadmapCard(
+                roadmap: roadmaps[index],
+                isListView: _currentLayout == GridLayout.single,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RoadmapDetailScreen(
+                        roadmap: roadmaps[index],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           );
         },
-        itemCount: 10,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

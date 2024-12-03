@@ -1,10 +1,35 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// Tracks a user's progress through a roadmap.
+/// 
+/// This model maintains:
+/// - Completion status of individual steps via [completedSteps]
+/// - Start and completion timestamps
+/// - Overall progress percentage
+/// - User and roadmap associations
+/// 
+/// The [progressPercentage] is automatically calculated based on completed steps.
 class RoadmapProgress {
+  /// Unique identifier for the progress record
   final String id;
+
+  /// ID of the user tracking this roadmap
   final String userId;
+
+  /// ID of the roadmap being tracked
   final String roadmapId;
+
+  /// Map of step IDs to their completion status
+  /// Key: Step ID, Value: Whether step is completed
   final Map<String, bool> completedSteps;
+
+  /// When the user started this roadmap
   final DateTime startedAt;
+
+  /// When the user completed all steps (null if incomplete)
   final DateTime? completedAt;
+
+  /// Percentage of steps completed (0.0 to 1.0)
   final double progressPercentage;
 
   RoadmapProgress({
@@ -23,9 +48,13 @@ class RoadmapProgress {
       userId: json['userId'],
       roadmapId: json['roadmapId'],
       completedSteps: Map<String, bool>.from(json['completedSteps'] ?? {}),
-      startedAt: DateTime.parse(json['startedAt']),
+      startedAt: (json['startedAt'] is Timestamp) 
+          ? (json['startedAt'] as Timestamp).toDate()
+          : DateTime.parse(json['startedAt']),
       completedAt: json['completedAt'] != null
-          ? DateTime.parse(json['completedAt'])
+          ? (json['completedAt'] is Timestamp)
+              ? (json['completedAt'] as Timestamp).toDate()
+              : DateTime.parse(json['completedAt'])
           : null,
       progressPercentage: json['progressPercentage']?.toDouble() ?? 0.0,
     );
@@ -36,8 +65,8 @@ class RoadmapProgress {
         'userId': userId,
         'roadmapId': roadmapId,
         'completedSteps': completedSteps,
-        'startedAt': startedAt.toIso8601String(),
-        'completedAt': completedAt?.toIso8601String(),
+        'startedAt': Timestamp.fromDate(startedAt),
+        'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
         'progressPercentage': progressPercentage,
       };
 
