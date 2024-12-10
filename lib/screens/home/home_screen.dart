@@ -19,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   GridLayout _currentLayout = GridLayout.single;
   late final RoadmapRepository _roadmapRepository;
-  late final Stream<List<Roadmap>> _roadmapsStream;
+  Stream<List<Roadmap>>? _roadmapsStream;
   bool _showPublicRoadmaps = false;
 
   @override
@@ -31,11 +31,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _updateRoadmapsStream() {
     final user = context.read<AuthService>().currentUser;
-    _roadmapsStream = _showPublicRoadmaps
-        ? _roadmapRepository.getPublicRoadmaps()
-        : (user != null
-            ? _roadmapRepository.getUserRoadmaps(user.uid)
-            : Stream.value([]));
+    setState(() {
+      _roadmapsStream = _showPublicRoadmaps
+          ? _roadmapRepository.getPublicRoadmaps()
+          : (user != null
+              ? _roadmapRepository.getUserRoadmaps(user.uid)
+              : Stream.value([]));
+    });
   }
 
   Future<void> _logout() async {
@@ -61,6 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: Icon(_showPublicRoadmaps ? Icons.person : Icons.public),
+            tooltip: _showPublicRoadmaps
+                ? 'View My Roadmaps'
+                : 'View Public Roadmaps',
             onPressed: () {
               setState(() {
                 _showPublicRoadmaps = !_showPublicRoadmaps;
@@ -91,27 +96,35 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
+            tooltip: 'Logout',
           ),
         ],
       ),
       body: StreamBuilder<List<Roadmap>>(
         stream: _roadmapsStream,
         builder: (context, snapshot) {
+          if (_roadmapsStream == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           final roadmaps = snapshot.data ?? [];
-          
+
           if (roadmaps.isEmpty) {
             return Center(
-              child: Text(_showPublicRoadmaps 
-                ? 'No public roadmaps available.'
-                : 'You haven\'t created any roadmaps yet.'),
+              child: Text(
+                _showPublicRoadmaps
+                    ? 'No public roadmaps available yet.\nBe the first to create one!'
+                    : 'You haven\'t created any roadmaps yet.\nTap + to create one.',
+                textAlign: TextAlign.center,
+              ),
             );
           }
 
@@ -119,10 +132,10 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(16),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: _getCrossAxisCount(),
-              childAspectRatio: _currentLayout == GridLayout.single 
-                  ? 3 
-                  : _currentLayout == GridLayout.double 
-                      ? 0.8 
+              childAspectRatio: _currentLayout == GridLayout.single
+                  ? 3
+                  : _currentLayout == GridLayout.double
+                      ? 0.8
                       : 0.7,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,

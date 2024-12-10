@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/roadmap.dart';
+import '../repositories/resource_repository.dart';
+import '../widgets/resource_list.dart';
+import 'resource_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 class StepDialog extends StatefulWidget {
-  final void Function(RoadmapStep) onSave;
+  final Future<void> Function(RoadmapStep) onSave;
   final RoadmapStep? initialStep;
 
   const StepDialog({
@@ -40,18 +44,43 @@ class _StepDialogState extends State<StepDialog> {
   }
 
   void _addResource() {
-    // TODO: Implement resource selection dialog
+    showDialog(
+      context: context,
+      builder: (context) => ResourceDialog(
+        onSave: (resource) async {
+          final resourceRepository = context.read<ResourceRepository>();
+          try {
+            final resourceId = await resourceRepository.create(resource);
+            if (mounted) {
+              setState(() {
+                _resources.add(resourceId);
+              });
+              Navigator.pop(context);
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error saving resource: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
   }
 
-  void _save() {
-    if (_formKey.currentState!.validate()) {
-      final step = RoadmapStep(
-        id: widget.initialStep?.id ?? const Uuid().v4(),
-        title: _titleController.text,
-        description: _descriptionController.text,
-        resources: _resources,
-      );
-      widget.onSave(step);
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final step = RoadmapStep(
+      id: widget.initialStep?.id ?? const Uuid().v4(),
+      title: _titleController.text,
+      description: _descriptionController.text,
+      resources: _resources,
+      isCompleted: widget.initialStep?.isCompleted ?? false,
+    );
+    await widget.onSave(step);
+    if (mounted) {
       Navigator.pop(context);
     }
   }
@@ -83,7 +112,31 @@ class _StepDialogState extends State<StepDialog> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Description is required' : null,
               ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Resources (${_resources.length})',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: _addResource,
+                    tooltip: 'Add Resource',
+                  ),
+                ],
+              ),
+              if (_resources.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ResourceList(
+                  resourceIds: _resources,
+                  showInDialog: true,
+                )
+              ],
             ],
           ),
         ),
@@ -100,4 +153,4 @@ class _StepDialogState extends State<StepDialog> {
       ],
     );
   }
-} 
+}

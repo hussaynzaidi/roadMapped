@@ -64,7 +64,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   child: _isLoading
-                      ? const CircularProgressIndicator()
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ))
                       : const Text('Login'),
                 ),
                 const SizedBox(height: 16),
@@ -92,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = true);
 
       try {
-        await context.read<AuthService>().signIn(
+        await context.read<AuthService>().signInWithEmailAndPassword(
               _emailController.text,
               _passwordController.text,
             );

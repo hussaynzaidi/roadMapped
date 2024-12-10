@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// A model representing a learning roadmap.
-/// 
+///
 /// Contains information about the roadmap including:
 /// - Basic details (title, description)
 /// - Steps to complete
 /// - Creation metadata
 /// - Visibility settings
-/// 
+///
 /// The [progress] field represents the overall completion percentage.
 class Roadmap {
   final String id;
@@ -59,13 +59,13 @@ class Roadmap {
 }
 
 /// Represents a single step in a learning roadmap.
-/// 
+///
 /// Each step contains:
 /// - Unique identifier
 /// - Title and description of the learning objective
 /// - Completion status tracking
 /// - Associated learning resources
-/// 
+///
 /// Resources can be links, files, or text content that help
 /// complete the learning objective.
 class RoadmapStep {
@@ -94,9 +94,9 @@ class RoadmapStep {
 
   factory RoadmapStep.fromJson(Map<String, dynamic> json) {
     return RoadmapStep(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
       isCompleted: json['isCompleted'] ?? false,
       resources: List<String>.from(json['resources'] ?? []),
     );

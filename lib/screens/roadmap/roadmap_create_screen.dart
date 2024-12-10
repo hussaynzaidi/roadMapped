@@ -7,13 +7,13 @@ import '../../widgets/step_dialog.dart';
 import '../../widgets/step_tile.dart';
 
 /// Screen for creating new roadmaps.
-/// 
+///
 /// Allows users to:
 /// - Set title and description
 /// - Add and manage steps
 /// - Configure visibility settings
 /// - Add resources to steps
-/// 
+///
 /// Uses [RoadmapRepository] for persistence and
 /// [AuthService] for user association.
 class RoadmapCreateScreen extends StatefulWidget {
@@ -26,14 +26,14 @@ class RoadmapCreateScreen extends StatefulWidget {
 class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Controllers for text input fields
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   /// List of steps in the roadmap
   final List<RoadmapStep> _steps = [];
-  
+
   /// Visibility setting for the roadmap
   bool _isPublic = true;
 
@@ -45,14 +45,14 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   }
 
   /// Shows dialog to add a new step to the roadmap.
-  /// 
+  ///
   /// Uses [StepDialog] for input and adds the new step
   /// to [_steps] when saved.
   void _addStep() {
     showDialog(
       context: context,
       builder: (context) => StepDialog(
-        onSave: (step) {
+        onSave: (step) async {
           setState(() {
             _steps.add(step);
           });
@@ -62,7 +62,7 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   }
 
   /// Saves the roadmap to Firestore.
-  /// 
+  ///
   /// Process:
   /// 1. Validates form input
   /// 2. Gets current user
@@ -100,7 +100,7 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   }
 
   /// Validates and saves the current form state.
-  /// 
+  ///
   /// Returns true if validation passes, false otherwise.
   /// Used before performing save operations.
   bool _validateForm() {
@@ -108,7 +108,7 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   }
 
   /// Resets the form to its initial state.
-  /// 
+  ///
   /// Clears:
   /// - Title and description fields
   /// - Steps list
@@ -124,10 +124,10 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   }
 
   /// Removes a step from the roadmap.
-  /// 
+  ///
   /// Parameters:
   /// - [index]: The position of the step to remove
-  /// 
+  ///
   /// Updates the UI immediately after removal.
   void _removeStep(int index) {
     setState(() {
@@ -175,7 +175,8 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Public Roadmap'),
-              subtitle: const Text('Allow others to view and follow this roadmap'),
+              subtitle:
+                  const Text('Allow others to view and follow this roadmap'),
               value: _isPublic,
               onChanged: (value) => setState(() => _isPublic = value),
             ),
@@ -187,8 +188,7 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
             const SizedBox(height: 8),
             ..._steps.map((step) => StepTile(
                   step: step,
-                  onDelete: () =>
-                      setState(() => _steps.remove(step)),
+                  onDelete: () => setState(() => _steps.remove(step)),
                 )),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -201,4 +201,4 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
       ),
     );
   }
-} 
+}

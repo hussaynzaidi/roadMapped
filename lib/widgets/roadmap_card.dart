@@ -6,13 +6,13 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 
 /// A card widget displaying roadmap information and progress.
-/// 
+///
 /// Features:
 /// - Title and description display
 /// - Progress indicator
 /// - Completion percentage
 /// - Responsive layout support
-/// 
+///
 /// Adapts its layout based on [isListView] parameter.
 class RoadmapCard extends StatelessWidget {
   final Roadmap roadmap;
@@ -54,16 +54,18 @@ class RoadmapCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 16),
-              if (userId != null) 
+              if (userId != null)
                 StreamBuilder<RoadmapProgress?>(
-                  stream: progressRepository.getUserRoadmapProgress(userId, roadmap.id),
+                  stream: progressRepository.getUserRoadmapProgress(
+                      userId, roadmap.id),
                   builder: (context, snapshot) {
                     final progress = snapshot.data?.progressPercentage ?? 0.0;
                     return Column(
                       children: [
                         LinearProgressIndicator(
                           value: progress,
-                          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surfaceContainer,
                         ),
                         const SizedBox(height: 8),
                         Text(

@@ -88,7 +88,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
                   child: _isLoading
-                      ? const CircularProgressIndicator()
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ))
                       : const Text('Register'),
                 ),
               ],
@@ -104,7 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isLoading = true);
 
       try {
-        await context.read<AuthService>().register(
+        await context.read<AuthService>().createUserWithEmailAndPassword(
               _emailController.text,
               _passwordController.text,
             );
