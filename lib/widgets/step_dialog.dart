@@ -57,7 +57,7 @@ class _StepDialogState extends State<StepDialog> {
               });
             }
           } catch (e) {
-            if (mounted) {
+            if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error saving resource: $e')),
               );

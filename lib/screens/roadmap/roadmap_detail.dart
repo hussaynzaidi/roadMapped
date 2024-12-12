@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/roadmap.dart';
 import '../../models/progress.dart';
@@ -122,7 +123,42 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              // TODO: Implement share functionality
+              final roadmapLink = 'roadmapped://roadmap/${widget.roadmap.id}';
+              // Show share dialog
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Share Roadmap'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SelectableText(roadmapLink),
+                      const SizedBox(height: 16),
+                      const Text('Copy this link to share the roadmap'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: roadmapLink));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Link copied to clipboard')),
+                          );
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: const Text('Copy'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ],

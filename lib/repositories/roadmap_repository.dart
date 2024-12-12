@@ -3,7 +3,7 @@ import '../models/roadmap.dart';
 import 'base_repository.dart';
 
 /// Repository for managing roadmaps in Firestore.
-/// 
+///
 /// Handles:
 /// - CRUD operations for roadmaps
 /// - Public/private roadmap filtering
@@ -14,7 +14,7 @@ class RoadmapRepository implements BaseRepository<Roadmap> {
   final String _collection = 'roadmaps';
 
   /// Creates a new roadmap in Firestore.
-  /// 
+  ///
   /// Converts the [Roadmap] object to JSON and stores it.
   /// Returns the generated document ID.
   @override
@@ -24,7 +24,7 @@ class RoadmapRepository implements BaseRepository<Roadmap> {
   }
 
   /// Retrieves a roadmap by its ID.
-  /// 
+  ///
   /// Returns null if no roadmap exists with the given ID.
   /// Converts Firestore document to [Roadmap] object.
   @override
@@ -58,7 +58,7 @@ class RoadmapRepository implements BaseRepository<Roadmap> {
   }
 
   /// Gets all public roadmaps.
-  /// 
+  ///
   /// Returns a stream that emits an updated list whenever:
   /// - New public roadmaps are created
   /// - Existing roadmaps are made public/private
@@ -75,10 +75,10 @@ class RoadmapRepository implements BaseRepository<Roadmap> {
   }
 
   /// Gets all roadmaps created by a specific user.
-  /// 
+  ///
   /// Parameters:
   /// - [userId]: The ID of the user whose roadmaps to retrieve
-  /// 
+  ///
   /// Returns a real-time stream of the user's roadmaps,
   /// ordered by creation date (newest first).
   Stream<List<Roadmap>> getUserRoadmaps(String userId) {
@@ -91,4 +91,10 @@ class RoadmapRepository implements BaseRepository<Roadmap> {
             .map((doc) => Roadmap.fromJson({...doc.data(), 'id': doc.id}))
             .toList());
   }
-} 
+
+  /// Gets a single roadmap by ID.
+  Stream<Roadmap?> getRoadmap(String id) {
+    return _db.collection(_collection).doc(id).snapshots().map((doc) =>
+        doc.exists ? Roadmap.fromJson({...doc.data()!, 'id': doc.id}) : null);
+  }
+}

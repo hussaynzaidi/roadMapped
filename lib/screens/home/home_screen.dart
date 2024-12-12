@@ -4,6 +4,7 @@ import '../../models/roadmap.dart';
 import '../../repositories/roadmap_repository.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/roadmap_card.dart';
+import '../profile/profile_screen.dart';
 import '../roadmap/roadmap_create_screen.dart';
 import '../roadmap/roadmap_detail.dart';
 
@@ -70,9 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _logout() async {
-    await context.read<AuthService>().signOut();
-  }
+  // Future<void> _logout() async {
+  //   await context.read<AuthService>().signOut();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +83,15 @@ class _HomeScreenState extends State<HomeScreen> {
         forceMaterialTransparency: true,
         actions: [
           IconButton(
-            icon: Icon(_showPublicRoadmaps ? Icons.person : Icons.public),
+            icon: const Icon(Icons.person),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+                _showPublicRoadmaps ? Icons.public_off_outlined : Icons.public),
             tooltip: _showPublicRoadmaps
                 ? 'View My Roadmaps'
                 : 'View Public Roadmaps',
@@ -113,11 +122,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Logout',
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.logout),
+          //   onPressed: _logout,
+          //   tooltip: 'Logout',
+          // ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(50.0),

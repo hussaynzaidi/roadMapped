@@ -9,17 +9,22 @@ import 'repositories/roadmap_repository.dart';
 import 'repositories/user_repository.dart';
 import 'repositories/progress_repository.dart';
 import 'repositories/resource_repository.dart';
+import 'services/theme_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(MyApp(prefs: prefs));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final SharedPreferences prefs;
+  const MyApp({super.key, required this.prefs});
 
   @override
   Widget build(BuildContext context) {
@@ -39,17 +44,30 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProxyProvider<UserRepository, AuthService>(
           create: (context) => AuthService(context.read<UserRepository>()),
-          update: (context, userRepository, previous) => 
+          update: (context, userRepository, previous) =>
               previous ?? AuthService(userRepository),
         ),
+        Provider<SharedPreferences>.value(
+          value: prefs,
+        ),
+        ChangeNotifierProvider(
+          create: (context) => ThemeService(
+            context.read<SharedPreferences>(),
+          ),
+        ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'RoadMapped',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        home: const AuthWrapper(),
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'RoadMapped',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode:
+                themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            home: const AuthWrapper(),
+          );
+        },
       ),
     );
   }
