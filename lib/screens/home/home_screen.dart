@@ -19,29 +19,44 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   GridLayout _currentLayout = GridLayout.single;
   late final RoadmapRepository _roadmapRepository;
-  Stream<List<Roadmap>>? _roadmapsStream;
+  List<Roadmap> _allRoadmaps = [];
+  List<Roadmap> _filteredRoadmaps = [];
   bool _showPublicRoadmaps = false;
 
   @override
   void initState() {
     super.initState();
     _roadmapRepository = context.read<RoadmapRepository>();
-    _updateRoadmapsStream();
+    _fetchRoadmaps();
   }
 
-  void _updateRoadmapsStream() {
+  Future<void> _fetchRoadmaps() async {
     final user = context.read<AuthService>().currentUser;
+    if (user == null && !_showPublicRoadmaps) {
+      setState(() {
+        _allRoadmaps = [];
+        _filteredRoadmaps = [];
+      });
+      return;
+    }
+
+    final roadmaps = _showPublicRoadmaps
+        ? await _roadmapRepository.getPublicRoadmaps().first
+        : await _roadmapRepository.getUserRoadmaps(user!.uid).first;
+
     setState(() {
-      _roadmapsStream = _showPublicRoadmaps
-          ? _roadmapRepository.getPublicRoadmaps()
-          : (user != null
-              ? _roadmapRepository.getUserRoadmaps(user.uid)
-              : Stream.value([]));
+      _allRoadmaps = roadmaps;
+      _filteredRoadmaps = roadmaps;
     });
   }
 
-  Future<void> _logout() async {
-    await context.read<AuthService>().signOut();
+  void _filterRoadmaps(String query) {
+    setState(() {
+      _filteredRoadmaps = _allRoadmaps.where((roadmap) {
+        return roadmap.title.toLowerCase().contains(query.toLowerCase()) ||
+            roadmap.description.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
   }
 
   int _getCrossAxisCount() {
@@ -55,11 +70,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    await context.read<AuthService>().signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('RoadMapped'),
+        forceMaterialTransparency: true,
         actions: [
           IconButton(
             icon: Icon(_showPublicRoadmaps ? Icons.person : Icons.public),
@@ -69,8 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               setState(() {
                 _showPublicRoadmaps = !_showPublicRoadmaps;
-                _updateRoadmapsStream();
               });
+              _fetchRoadmaps();
             },
           ),
           PopupMenuButton<GridLayout>(
@@ -99,67 +119,60 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Logout',
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextField(
+              onChanged: _filterRoadmaps,
+              decoration: InputDecoration(
+                hintText: 'Search roadmaps...',
+                border: OutlineInputBorder(),
+                suffixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+        ),
       ),
-      body: StreamBuilder<List<Roadmap>>(
-        stream: _roadmapsStream,
-        builder: (context, snapshot) {
-          if (_roadmapsStream == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final roadmaps = snapshot.data ?? [];
-
-          if (roadmaps.isEmpty) {
-            return Center(
+      body: _filteredRoadmaps.isEmpty
+          ? Center(
               child: Text(
                 _showPublicRoadmaps
                     ? 'No public roadmaps available yet.\nBe the first to create one!'
                     : 'You haven\'t created any roadmaps yet.\nTap + to create one.',
                 textAlign: TextAlign.center,
               ),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: _getCrossAxisCount(),
-              childAspectRatio: _currentLayout == GridLayout.single
-                  ? 3
-                  : _currentLayout == GridLayout.double
-                      ? 0.8
-                      : 0.7,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-            ),
-            itemCount: roadmaps.length,
-            itemBuilder: (context, index) {
-              return RoadmapCard(
-                roadmap: roadmaps[index],
-                isListView: _currentLayout == GridLayout.single,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RoadmapDetailScreen(
-                        roadmap: roadmaps[index],
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _getCrossAxisCount(),
+                childAspectRatio: _currentLayout == GridLayout.single
+                    ? 3
+                    : _currentLayout == GridLayout.double
+                        ? 0.8
+                        : 0.7,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: _filteredRoadmaps.length,
+              itemBuilder: (context, index) {
+                return RoadmapCard(
+                  roadmap: _filteredRoadmaps[index],
+                  isListView: _currentLayout == GridLayout.single,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RoadmapDetailScreen(
+                          roadmap: _filteredRoadmaps[index],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
+                    );
+                  },
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

@@ -103,9 +103,9 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   ///
   /// Returns true if validation passes, false otherwise.
   /// Used before performing save operations.
-  bool _validateForm() {
-    return _formKey.currentState?.validate() ?? false;
-  }
+  // bool _validateForm() {
+  //   return _formKey.currentState?.validate() ?? false;
+  // }
 
   /// Resets the form to its initial state.
   ///
@@ -113,15 +113,15 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
   /// - Title and description fields
   /// - Steps list
   /// - Visibility setting
-  void _resetForm() {
-    _titleController.clear();
-    _descriptionController.clear();
-    setState(() {
-      _steps.clear();
-      _isPublic = true;
-    });
-    _formKey.currentState?.reset();
-  }
+  // void _resetForm() {
+  //   _titleController.clear();
+  //   _descriptionController.clear();
+  //   setState(() {
+  //     _steps.clear();
+  //     _isPublic = true;
+  //   });
+  //   _formKey.currentState?.reset();
+  // }
 
   /// Removes a step from the roadmap.
   ///
@@ -186,10 +186,15 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ..._steps.map((step) => StepTile(
-                  step: step,
-                  onDelete: () => setState(() => _steps.remove(step)),
-                )),
+            ..._steps.asMap().entries.map((entry) {
+              final index = entry.key;
+              final step = entry.value;
+              return StepTile(
+                step: step,
+                onDelete: () =>
+                    _removeStep(index), // Attach the delete callback here
+              );
+            }),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _addStep,

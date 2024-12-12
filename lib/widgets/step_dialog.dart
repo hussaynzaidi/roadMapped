@@ -55,7 +55,6 @@ class _StepDialogState extends State<StepDialog> {
               setState(() {
                 _resources.add(resourceId);
               });
-              Navigator.pop(context);
             }
           } catch (e) {
             if (mounted) {

@@ -10,6 +10,7 @@ A learning roadmap tracking application built with Flutter and Firebase.
 - 🌐 Share roadmaps with the community
 - 📈 Real-time progress tracking and visualization
 - 🎨 Customizable view layouts (Grid/List)
+- 📚 Resource management for steps (Add, view, and manage resources)
 
 ## Architecture
 
@@ -43,7 +44,7 @@ cd roadmapped
 flutter pub get
 ```
 
-## Project Progress (65% Complete)
+## Project Progress (70% Complete)
 
 ### Core Features
 - [x] User Authentication
@@ -53,8 +54,8 @@ flutter pub get
 - [x] Public/Private Roadmaps
 - [x] Responsive Layout
 - [x] Progress Visualization
-- [ ] Resource Management
-- [ ] Search & Filter
+- [x] Resource Management
+- [x] Search & Filter
 - [ ] Social Features
 
 ### UI/UX
@@ -63,7 +64,7 @@ flutter pub get
 - [x] Progress Indicators
 - [x] Loading States
 - [x] Error Handling
-- [ ] Dark Mode
+- [x] Dark Mode
 - [ ] Animations
 - [ ] Offline Support
 

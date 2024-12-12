@@ -5,7 +5,7 @@ import '../models/user.dart';
 import '../repositories/user_repository.dart';
 
 /// Service for handling Firebase Authentication.
-/// 
+///
 /// Provides:
 /// - User authentication state management
 /// - Sign in/out functionality
@@ -14,12 +14,12 @@ import '../repositories/user_repository.dart';
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final UserRepository _userRepository;
-  User? _currentUser;
+  //User? _currentUser;
 
   AuthService(this._userRepository) {
     // Listen to auth state changes
     _auth.authStateChanges().listen((user) {
-      _currentUser = user;
+      //  _currentUser = user;
       notifyListeners();
     });
   }
@@ -31,19 +31,19 @@ class AuthService extends ChangeNotifier {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   /// Signs in user with email and password
-  /// 
+  ///
   /// Throws [FirebaseAuthException] if:
   /// - Invalid email
   /// - Wrong password
   /// - User not found
   Future<UserCredential> signInWithEmailAndPassword(
-    String email, 
+    String email,
     String password,
   ) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
-      _currentUser = credential.user;
+      // _currentUser = credential.user;
       notifyListeners();
       return credential;
     } catch (e) {
@@ -52,13 +52,13 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Creates new user account with email and password
-  /// 
+  ///
   /// Throws [FirebaseAuthException] if:
   /// - Email already in use
   /// - Weak password
   /// - Invalid email
   Future<UserCredential> createUserWithEmailAndPassword(
-    String email, 
+    String email,
     String password,
   ) async {
     try {
@@ -74,7 +74,7 @@ class AuthService extends ChangeNotifier {
       );
       await _userRepository.create(user);
       notifyListeners();
-      _currentUser = credential.user;
+      // _currentUser = credential.user;
       notifyListeners();
       return credential;
     } catch (e) {
@@ -84,7 +84,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _auth.signOut();
-    _currentUser = null;
+    //  _currentUser = null;
     notifyListeners();
   }
 }

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/resource.dart';
-import '../services/cache_service.dart';
 import 'base_repository.dart';
 
 /// Repository for managing learning resources in Firestore.
@@ -14,7 +13,6 @@ import 'base_repository.dart';
 /// - Resource retrieval and caching
 class ResourceRepository implements BaseRepository<Resource> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final CacheService _cacheService = CacheService();
   final String _collection = 'resources';
 
   Future<String> saveLocalFile(File file, String resourceId) async {
