@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmapped/repositories/resource_repository.dart';
 import '../../models/roadmap.dart';
 import '../../repositories/roadmap_repository.dart';
 import '../../services/auth_service.dart';
@@ -142,7 +143,8 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
     final topicController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Generate Roadmap'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -158,7 +160,9 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+            },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -166,12 +170,16 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
               final topic = topicController.text;
               if (topic.isEmpty) return;
 
-              Navigator.pop(context);
               setState(() => _isLoading = true);
+              Navigator.of(dialogContext).pop();
 
-              final roadmap = await GeminiService().generateFullRoadmap(topic);
+              try {
+                final roadmap =
+                    await GeminiService(context.read<ResourceRepository>())
+                        .generateFullRoadmap(topic);
 
-              if (context.mounted) {
+                if (!mounted) return;
+
                 setState(() {
                   _isLoading = false;
                   if (roadmap != null) {
@@ -181,6 +189,12 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
                     _steps.addAll(roadmap.steps);
                   }
                 });
+              } catch (e) {
+                if (!mounted) return;
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error generating roadmap: $e')),
+                );
               }
             },
             child: const Text('Generate'),

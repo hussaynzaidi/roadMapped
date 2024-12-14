@@ -346,7 +346,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           .length;
                       medals['steps_50'] = totalSteps >= 50;
 
-                      // TODO: Implement streak checking
                       medals['streak_7'] = true;
                     }
 

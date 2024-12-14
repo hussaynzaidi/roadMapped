@@ -29,7 +29,6 @@ class RoadmapDetailScreen extends StatefulWidget {
 
 class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
   late final ProgressRepository _progressRepository;
-  // late final ResourceRepository _resourceRepository;
   late final Stream<RoadmapProgress?> _progressStream;
   String? _userId;
   bool _isLoading = false;
@@ -38,12 +37,40 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
   void initState() {
     super.initState();
     _progressRepository = context.read<ProgressRepository>();
-    //  _resourceRepository = context.read<ResourceRepository>();
     _userId = context.read<AuthService>().currentUser?.uid;
 
     if (_userId != null) {
       _progressStream = _progressRepository.getUserRoadmapProgress(
-          _userId!, widget.roadmap.id);
+        _userId!,
+        widget.roadmap.id,
+      );
+    }
+  }
+
+  Future<void> _handleError(String operation, dynamic error) async {
+    final message = switch (error.toString()) {
+      String msg when msg.contains('permission-denied') =>
+        'You don\'t have permission to $operation this roadmap',
+      String msg when msg.contains('not-found') =>
+        'This roadmap no longer exists',
+      String msg when msg.contains('network') =>
+        'Network error. Please check your connection',
+      _ => 'Error while $operation: ${error.toString()}'
+    };
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          action: error.toString().contains('network')
+              ? SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () => _startRoadmap(),
+                )
+              : null,
+        ),
+      );
     }
   }
 
@@ -61,11 +88,7 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
       await _progressRepository.updateStepCompletion(
           progressId, stepId, !currentValue, widget.roadmap.steps.length);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating progress: $e')),
-        );
-      }
+      await _handleError('updating', e);
     }
   }
 
@@ -81,19 +104,17 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
     if (_userId == null) return;
 
     try {
-      // Delete the old progress first
+      setState(() => _isLoading = true);
+
       final currentProgress = await _progressRepository
           .getUserRoadmapProgress(_userId!, widget.roadmap.id)
           .first;
 
       if (currentProgress != null) {
         await _progressRepository.delete(currentProgress.id);
+        await Future.delayed(const Duration(milliseconds: 100));
       }
 
-      // Wait a moment to ensure deletion is processed
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Create new progress
       final progress = RoadmapProgress(
         id: '',
         userId: _userId!,
@@ -103,68 +124,82 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
         progressPercentage: 0,
       );
 
-      // Create and wait for completion
       await _progressRepository.create(progress);
     } catch (e) {
+      await _handleError('starting', e);
+    } finally {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error starting roadmap: $e')),
-        );
+        setState(() => _isLoading = false);
       }
     }
   }
 
+  void _showShareDialog(BuildContext context) {
+    final roadmapLink = 'roadmapped://roadmap/${widget.roadmap.id}';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Share Roadmap'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: SelectableText(
+                  roadmapLink,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Copy this link to share the roadmap'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: roadmapLink));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Link copied to clipboard')),
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
+        forceMaterialTransparency: true,
         title: Text(widget.roadmap.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {
-              final roadmapLink = 'roadmapped://roadmap/${widget.roadmap.id}';
-              // Show share dialog
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Share Roadmap'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SelectableText(roadmapLink),
-                      const SizedBox(height: 16),
-                      const Text('Copy this link to share the roadmap'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () async {
-                        await Clipboard.setData(
-                            ClipboardData(text: roadmapLink));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Link copied to clipboard')),
-                          );
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: const Text('Copy'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            onPressed: () => _showShareDialog(context),
           ),
         ],
       ),
       body: _userId == null
-          ? const Center(child: Text('Sign in to track progress'))
+          ? Center(
+              child: Text(
+                'Sign in to track progress',
+                style: theme.textTheme.titleMedium,
+              ),
+            )
           : StreamBuilder<RoadmapProgress?>(
               stream: _progressStream,
               builder: (context, snapshot) {
@@ -175,133 +210,95 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                 final progress = snapshot.data;
                 final progressValue = progress?.progressPercentage ?? 0.0;
 
-                return StatefulBuilder(
-                  builder: (context, setState) {
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.roadmap.description,
-                                style: Theme.of(context).textTheme.bodyLarge,
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.roadmap.description,
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                            const SizedBox(height: 16),
+                            if (progress == null)
+                              Center(
+                                child: ElevatedButton(
+                                  onPressed: _isLoading
+                                      ? null
+                                      : () async {
+                                          setState(() => _isLoading = true);
+                                          await _startRoadmap();
+                                          if (mounted) {
+                                            setState(() => _isLoading = false);
+                                          }
+                                        },
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text('Start This Roadmap'),
+                                ),
                               ),
-                              const SizedBox(height: 16),
-                              if (progress == null) ...[
-                                Center(
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      // Show loading state during the operation
-                                      setState(() => _isLoading = true);
-                                      await _startRoadmap();
-                                      if (mounted) {
-                                        setState(() => _isLoading = false);
-                                      }
-                                    },
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Text('Start This Roadmap'),
-                                  ),
-                                ),
-                              ] else ...[
-                                if (progressValue >= 1.0) ...[
-                                  const Icon(Icons.celebration,
-                                      size: 48, color: Colors.amber),
-                                  const Text(
-                                    'Congratulations! 🎉',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ElevatedButton(
-                                    onPressed: _isLoading
-                                        ? null
-                                        : () async {
-                                            setState(() => _isLoading = true);
-                                            await _startRoadmap();
-                                            if (mounted) {
-                                              setState(
-                                                  () => _isLoading = false);
-                                            }
-                                          },
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Text('Start Again'),
-                                  ),
-                                ],
-                                const SizedBox(height: 16),
-                                LinearProgressIndicator(
-                                  value: progressValue,
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainer,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${(progressValue * 100).toInt()}% Complete',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                            if (progress != null) ...[
+                              LinearProgressIndicator(
+                                value: progressValue,
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainer,
+                                minHeight: 8,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${(progressValue * 100).toInt()}% Complete',
+                                style: theme.textTheme.bodySmall,
+                              ),
                             ],
-                          ),
+                          ],
                         ),
-                        if (progress != null && progressValue < 1.0)
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: widget.roadmap.steps.length,
-                              itemBuilder: (context, index) {
-                                final step = widget.roadmap.steps[index];
-                                final isCompleted =
-                                    progress.completedSteps[step.id] ?? false;
-
-                                return ExpansionTile(
-                                  leading: Checkbox(
-                                    value: isCompleted,
-                                    onChanged: (bool? value) {
-                                      _toggleStepCompletion(
-                                        progress.id,
-                                        step.id,
-                                        isCompleted,
-                                      );
-                                    },
-                                  ),
-                                  title: Text(
-                                    step.title,
-                                    style: TextStyle(
-                                      decoration: isCompleted
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                    ),
-                                  ),
-                                  subtitle: Text(step.description),
-                                  children: [
-                                    ResourceList(resourceIds: step.resources),
-                                  ],
+                      ),
+                    ),
+                    if (progress != null && progressValue < 1.0)
+                      ...widget.roadmap.steps.map((step) {
+                        final isCompleted =
+                            progress.completedSteps[step.id] ?? false;
+                        return Card(
+                          margin: const EdgeInsets.only(top: 8),
+                          child: ExpansionTile(
+                            leading: Checkbox(
+                              value: isCompleted,
+                              onChanged: (bool? value) {
+                                _toggleStepCompletion(
+                                  progress.id,
+                                  step.id,
+                                  isCompleted,
                                 );
                               },
                             ),
+                            title: Text(
+                              step.title,
+                              style: TextStyle(
+                                decoration: isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            subtitle: Text(step.description),
+                            children: [
+                              ResourceList(resourceIds: step.resources),
+                              const SizedBox(height: 8),
+                            ],
                           ),
-                      ],
-                    );
-                  },
+                        );
+                      }),
+                  ],
                 );
               },
             ),

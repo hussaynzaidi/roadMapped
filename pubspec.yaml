@@ -25,6 +25,7 @@ dependencies:
   flutter_dotenv: ^5.0.2
   flutter_local_notifications: ^18.0.1
   url_launcher: ^6.2.5
+  logging: ^1.1.0
   uuid: ^4.3.3
 
 dev_dependencies:

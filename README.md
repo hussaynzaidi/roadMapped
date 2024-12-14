@@ -21,29 +21,6 @@ The project follows a repository pattern with the following structure:
 - `widgets/`: Reusable UI components
 - `services/`: Core services like authentication
 
-## Getting Started
-
-### Prerequisites
-
-- Flutter SDK (3.5.2 or higher)
-- Firebase CLI
-- Git
-
-### Installation
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/hussaynzaidi/roadmapped.git
-cd roadmapped
-```
-
-2. Install dependencies
-
-```bash
-flutter pub get
-```
-
 ## Project Progress (70% Complete)
 
 ### Core Features
@@ -85,52 +62,24 @@ flutter pub get
 - [ ] User Guide
 - [ ] API Documentation
 
-## AI Development Prompt
+## Getting Started
 
-Use this prompt for AI-assisted development:
+### Prerequisites
+- Flutter SDK (3.5.2 or higher)
+- Firebase project setup
+- Git
 
-"You are assisting with the RoadMapped project, a Flutter application for creating and tracking learning roadmaps. The project uses Firebase for backend services and follows Material Design principles.
+### Installation
+1. Clone the repository
+2. Run `flutter pub get`
+3. Configure Firebase (add google-services.json/GoogleService-Info.plist)
+4. Create .env file with required keys
+5. Run `flutter run`
 
-Current tech stack:
-- Flutter 3.5.2+
-- Firebase (Auth, Firestore, Storage)
-- Provider for state management
-- Material Design components
+## Contributing
 
-Key models:
-- Roadmap (title, description, steps, visibility)
-- RoadmapStep (title, description, resources)
-- RoadmapProgress (user progress tracking)
+Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
 
-TODO List:
-1. Resource Management
-   - Resource model implementation
-   - Resource linking to steps
-   - Resource viewing interface
-   - Resource type handling (links, files, text)
+## License
 
-2. Social Features
-   - User profiles
-   - Roadmap sharing
-   - Following system
-   - Activity feed
-
-3. Search & Filter
-   - Search functionality
-   - Category system
-   - Filter implementation
-   - Sort options
-
-4. Performance
-   - Caching strategy
-   - Pagination
-   - Image optimization
-   - Query optimization
-
-5. Testing
-   - Unit tests
-   - Widget tests
-   - Integration tests
-   - Performance tests
-
-Please help implement/improve [specific component] while maintaining the existing architecture and following Flutter best practices."
+This project is licensed under the MIT License - see the LICENSE file for details

@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
 import '../../models/roadmap.dart';
 import '../../repositories/roadmap_repository.dart';
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Roadmap> _allRoadmaps = [];
   List<Roadmap> _filteredRoadmaps = [];
   bool _showPublicRoadmaps = false;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -53,11 +55,58 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _filterRoadmaps(String query) {
-    setState(() {
-      _filteredRoadmaps = _allRoadmaps.where((roadmap) {
-        return roadmap.title.toLowerCase().contains(query.toLowerCase()) ||
-            roadmap.description.toLowerCase().contains(query.toLowerCase());
-      }).toList();
+    if (query.isEmpty) {
+      setState(() => _filteredRoadmaps = _allRoadmaps);
+      return;
+    }
+
+    // Debounce the search
+    if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final searchTerms = query.toLowerCase().split(' ');
+
+      setState(() {
+        _filteredRoadmaps = _allRoadmaps.where((roadmap) {
+          // Search in title and description
+          final inTitle = roadmap.title.toLowerCase();
+          final inDescription = roadmap.description.toLowerCase();
+
+          // Search in steps
+          final inSteps = roadmap.steps.any((step) {
+            final stepTitle = step.title.toLowerCase();
+            final stepDescription = step.description.toLowerCase();
+            return searchTerms.every((term) =>
+                stepTitle.contains(term) || stepDescription.contains(term));
+          });
+
+          // Check if all search terms are found
+          return searchTerms.every((term) =>
+              inTitle.contains(term) ||
+              inDescription.contains(term) ||
+              inSteps);
+        }).toList();
+
+        // Sort results by relevance
+        _filteredRoadmaps.sort((a, b) {
+          final aTitle = a.title.toLowerCase();
+          final bTitle = b.title.toLowerCase();
+          final exactMatchA = aTitle == query.toLowerCase();
+          final exactMatchB = bTitle == query.toLowerCase();
+
+          if (exactMatchA != exactMatchB) {
+            return exactMatchA ? -1 : 1;
+          }
+
+          final startsWithA = aTitle.startsWith(query.toLowerCase());
+          final startsWithB = bTitle.startsWith(query.toLowerCase());
+
+          if (startsWithA != startsWithB) {
+            return startsWithA ? -1 : 1;
+          }
+
+          return 0;
+        });
+      });
     });
   }
 
@@ -195,5 +244,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 }

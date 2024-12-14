@@ -21,6 +21,12 @@ class ResourceList extends StatelessWidget {
         final url = Uri.parse(resource.content);
         if (await canLaunchUrl(url)) {
           await launchUrl(url);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open URL')),
+            );
+          }
         }
         break;
       case ResourceType.text:
@@ -34,9 +40,36 @@ class ResourceList extends StatelessWidget {
     }
   }
 
-  Widget _buildResourceIcon(ResourceType type) {
-    return Icon(
-      type == ResourceType.link ? Icons.link : Icons.description,
+  Widget _buildResourceTile(Resource resource, BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: Icon(
+          resource.type == ResourceType.link ? Icons.link : Icons.description,
+          color: theme.colorScheme.primary,
+        ),
+        title: Text(
+          resource.title,
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(resource.description),
+            if (resource.type == ResourceType.link)
+              Text(
+                resource.content,
+                style: theme.textTheme.bodySmall,
+              ),
+          ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.open_in_new),
+          onPressed: () => _openResource(context, resource),
+        ),
+      ),
     );
   }
 
@@ -71,15 +104,7 @@ class ResourceList extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: resources
-                .map((resource) => ListTile(
-                      leading: _buildResourceIcon(resource.type),
-                      title: Text(resource.title),
-                      subtitle: Text(resource.description),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.open_in_new),
-                        onPressed: () => _openResource(context, resource),
-                      ),
-                    ))
+                .map((resource) => _buildResourceTile(resource, context))
                 .toList(),
           );
         }
@@ -90,15 +115,7 @@ class ResourceList extends StatelessWidget {
           itemCount: resources.length,
           itemBuilder: (context, index) {
             final resource = resources[index];
-            return ListTile(
-              leading: _buildResourceIcon(resource.type),
-              title: Text(resource.title),
-              subtitle: Text(resource.description),
-              trailing: IconButton(
-                icon: const Icon(Icons.open_in_new),
-                onPressed: () => _openResource(context, resource),
-              ),
-            );
+            return _buildResourceTile(resource, context);
           },
         );
       },
