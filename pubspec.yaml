@@ -21,6 +21,8 @@ dependencies:
   google_fonts: ^6.2.0
   shared_preferences: ^2.2.2
   flutter_markdown: ^0.7.4+3
+  flutter_gemini: ^3.0.0
+  flutter_dotenv: ^5.0.2
   flutter_local_notifications: ^18.0.1
   url_launcher: ^6.2.5
   uuid: ^4.3.3
@@ -32,6 +34,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - .env
+    # - assets/images/
+    # - assets/icons/

@@ -5,6 +5,7 @@ import '../../repositories/roadmap_repository.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/step_dialog.dart';
 import '../../widgets/step_tile.dart';
+import '../../services/gemini_service.dart';
 
 /// Screen for creating new roadmaps.
 ///
@@ -36,6 +37,8 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
 
   /// Visibility setting for the roadmap
   bool _isPublic = true;
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -135,75 +138,150 @@ class _RoadmapCreateScreenState extends State<RoadmapCreateScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Roadmap'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveRoadmap,
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+  void _showGenerateDialog() {
+    final topicController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Generate Roadmap'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
-              controller: _titleController,
+            TextField(
+              controller: topicController,
               decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
+                labelText: 'What do you want to learn?',
+                hintText: 'e.g., Flutter Development, Machine Learning',
               ),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Title is required' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Description is required' : null,
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Public Roadmap'),
-              subtitle:
-                  const Text('Allow others to view and follow this roadmap'),
-              value: _isPublic,
-              onChanged: (value) => setState(() => _isPublic = value),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Steps',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            ..._steps.asMap().entries.map((entry) {
-              final index = entry.key;
-              final step = entry.value;
-              return StepTile(
-                step: step,
-                onDelete: () =>
-                    _removeStep(index), // Attach the delete callback here
-              );
-            }),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _addStep,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Step'),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final topic = topicController.text;
+              if (topic.isEmpty) return;
+
+              Navigator.pop(context);
+              setState(() => _isLoading = true);
+
+              final roadmap = await GeminiService().generateFullRoadmap(topic);
+
+              if (context.mounted) {
+                setState(() {
+                  _isLoading = false;
+                  if (roadmap != null) {
+                    _titleController.text = roadmap.title;
+                    _descriptionController.text = roadmap.description;
+                    _steps.clear();
+                    _steps.addAll(roadmap.steps);
+                  }
+                });
+              }
+            },
+            child: const Text('Generate'),
+          ),
+        ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text('Create Roadmap'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.save),
+                onPressed: _saveRoadmap,
+              ),
+            ],
+          ),
+          body: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Title is required' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Description is required' : null,
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Public Roadmap'),
+                  subtitle: const Text(
+                      'Allow others to view and follow this roadmap'),
+                  value: _isPublic,
+                  onChanged: (value) => setState(() => _isPublic = value),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Steps',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                ..._steps.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final step = entry.value;
+                  return StepTile(
+                    step: step,
+                    onDelete: () =>
+                        _removeStep(index), // Attach the delete callback here
+                  );
+                }),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: _addStep,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Step'),
+                ),
+              ],
+            ),
+          ),
+          floatingActionButton: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: 'generate',
+                onPressed: () => _showGenerateDialog(),
+                label: const Text('Generate with AI'),
+                icon: const Icon(Icons.auto_awesome),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        if (_isLoading)
+          Container(
+            color: Colors.black54,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+      ],
     );
   }
 }

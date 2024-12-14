@@ -13,6 +13,8 @@ google-services.json
 GoogleService-Info.plist
 firebase_options.dart
 
+
+.env
 # IDE specific
 .idea/
 .vscode/

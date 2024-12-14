@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
 import 'screens/auth/auth_wrapper.dart';
 import 'config/theme.dart';
@@ -17,6 +19,13 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  try {
+    await dotenv.load(fileName: ".env"); // Load environment variables
+  } catch (e) {
+    throw Exception('Error loading .env file: $e'); // Print error if any
+  }
+  Gemini.init(apiKey: dotenv.env['gemini_api_key'] ?? '');
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(MyApp(prefs: prefs));
