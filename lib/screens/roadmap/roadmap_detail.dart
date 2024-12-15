@@ -249,17 +249,67 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                                 ),
                               ),
                             if (progress != null) ...[
-                              LinearProgressIndicator(
-                                value: progressValue,
-                                backgroundColor:
-                                    theme.colorScheme.surfaceContainer,
-                                minHeight: 8,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${(progressValue * 100).toInt()}% Complete',
-                                style: theme.textTheme.bodySmall,
-                              ),
+                              if (progressValue >= 1.0) ...[
+                                Center(
+                                  child: Column(
+                                    children: [
+                                      const Icon(Icons.celebration,
+                                          size: 48, color: Colors.amber),
+                                      const Text(
+                                        'Congratulations! 🎉',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'This roadmap is complete. You can start again below.',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () async {
+                                                setState(
+                                                    () => _isLoading = true);
+                                                await _startRoadmap();
+                                                if (mounted) {
+                                                  setState(
+                                                      () => _isLoading = false);
+                                                }
+                                              },
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : const Text('Start Again'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ] else ...[
+                                LinearProgressIndicator(
+                                  value: progressValue,
+                                  backgroundColor:
+                                      theme.colorScheme.surfaceContainer,
+                                  minHeight: 8,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${(progressValue * 100).toInt()}% Complete',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
                             ],
                           ],
                         ),
